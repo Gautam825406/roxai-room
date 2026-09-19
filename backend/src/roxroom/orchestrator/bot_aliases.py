@@ -7,6 +7,12 @@ Tried that first: SequenceMatcher ratio for "dast" vs "dost" is 0.75 -- identica
 also fires on ordinary English words, which is worse than the problem it solves. For a
 closed set of two names, an explicit list of known variants is the safer choice; add to
 it as new misrecognitions turn up in testing.
+
+The STT providers run in code-mixed Hindi/English mode (Deepgram nova-3 with
+`language="multi"`, Sarvam Saarika similarly), so a bot name spoken in Hindi
+comes back in Devanagari script (e.g. "साथी"), not a
+romanization -- both scripts need aliases or every Hindi-spoken invocation of
+the bots is silently dropped by stage-A routing.
 """
 from __future__ import annotations
 
@@ -16,8 +22,10 @@ from dataclasses import dataclass
 DOST = "dost"
 SATHI = "sathi"
 
-DOST_ALIASES = frozenset({"dost", "dosth", "dast", "dosht", "dosdt"})
-SATHI_ALIASES = frozenset({"sathi", "saathi", "sathee", "saathee", "shathi", "sathhi"})
+DOST_ALIASES = frozenset({"dost", "dosth", "dast", "dosht", "dosdt", "दोस्त"})
+SATHI_ALIASES = frozenset(
+    {"sathi", "saathi", "sathee", "saathee", "shathi", "sathhi", "साथी", "साथि"}
+)
 
 
 @dataclass(frozen=True)
@@ -30,7 +38,7 @@ class BotMention:
 def find_bot_mentions(text: str) -> list[BotMention]:
     mentions: list[BotMention] = []
     for m in re.finditer(r"\S+", text):
-        token = m.group().strip(".,?!\"'").lower()
+        token = m.group().strip(".,?!\"'।॥").lower()
         if token in DOST_ALIASES:
             mentions.append(BotMention(bot=DOST, start=m.start(), end=m.end()))
         elif token in SATHI_ALIASES:

@@ -64,6 +64,12 @@ class ElevenLabsTTSStream(TTSStream):
         try:
             async for raw in self._ws:
                 data = json.loads(raw)
+                # ElevenLabs reports auth/permission/quota failures as a normal
+                # JSON message over the still-open socket, then closes it -- if we
+                # only look at the close code, every one of these looks like an
+                # ordinary "stream ended" and the real reason never surfaces.
+                if data.get("error"):
+                    logger.error("elevenlabs rejected request: %s", data.get("message") or data)
                 audio_b64 = data.get("audio")
                 if audio_b64:
                     pcm = base64.b64decode(audio_b64)
@@ -74,8 +80,10 @@ class ElevenLabsTTSStream(TTSStream):
                     break
         except asyncio.CancelledError:
             pass
-        except websockets.ConnectionClosed:
+        except websockets.ConnectionClosedOK:
             logger.info("elevenlabs connection closed")
+        except websockets.ConnectionClosedError as exc:
+            logger.error("elevenlabs connection closed abnormally: code=%s reason=%r", exc.code, exc.reason)
         except Exception:
             logger.exception("elevenlabs recv loop crashed")
         finally:

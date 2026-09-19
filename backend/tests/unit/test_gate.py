@@ -52,6 +52,18 @@ def test_stage_a_explicit_bot_mention_tolerates_asr_noise():
     assert result.explicit_bot == "sathi"
 
 
+def test_stage_a_explicit_bot_mention_in_devanagari_script():
+    # Deepgram/Sarvam run in code-mixed hi-en mode, so a bot name spoken in
+    # Hindi comes back in Devanagari, not a romanization -- this is the exact
+    # utterance ("Hello, साथी.") that silently failed to
+    # route before Devanagari aliases were added.
+    result = evaluate_stage_a("Hello, साथी.")
+    assert result.explicit_bot == "sathi"
+
+    result = evaluate_stage_a("दोस्त tum batao")
+    assert result.explicit_bot == "dost"
+
+
 def test_stage_a_multi_bot_mention_has_no_single_explicit_bot():
     result = evaluate_stage_a("Dost tum answer karo, Sathi tum example dena")
     assert result.explicit_bot is None
