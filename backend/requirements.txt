@@ -4,4 +4,12 @@
 # `pip install -e ".[server]"` installs locally. The project's real dependency list
 # lives in pyproject.toml -- keep this file as the one-line passthrough, don't
 # duplicate deps here.
+#
+# silero-vad depends on torch. Without this, pip's default index resolves torch
+# to the CUDA build on Linux, pulling several GB of nvidia-*-cu12 packages we
+# never use (no GPU on Render / this deploy target). Point pip at the CPU-only
+# wheels instead, with PyPI still available for everything else.
+--index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://pypi.org/simple
+
 -e .[server]
